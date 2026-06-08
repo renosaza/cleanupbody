@@ -1,0 +1,21 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build release artifact
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package app
+        run: Scripts/package-app.sh
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/CleanUpBody-macos.zip
