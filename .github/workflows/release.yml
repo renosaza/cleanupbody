@@ -13,7 +13,7 @@ jobs:
     name: Build release artifact
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Package app
         run: Scripts/package-app.sh
       - uses: softprops/action-gh-release@v2
