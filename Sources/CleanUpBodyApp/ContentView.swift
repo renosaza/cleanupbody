@@ -119,7 +119,9 @@ private struct ActiveSession: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.red)
 
-            Text("Emergency: Control + Option + Command + Escape")
+            UnlockProgress(progress: model.unlockHoldProgress)
+
+            Text("Unlock: hold both Option keys for 5 seconds")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -134,5 +136,28 @@ private struct ActiveSession: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(32)
+    }
+}
+
+private struct UnlockProgress: View {
+    let progress: Double
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(.quaternary, lineWidth: 10)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(.blue, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.easeOut(duration: 0.1), value: progress)
+            Image(systemName: "option")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundStyle(progress > 0 ? .blue : .secondary)
+                .scaleEffect(progress > 0 ? 1.08 : 1)
+                .animation(.easeInOut(duration: 0.2), value: progress > 0)
+        }
+        .frame(width: 74, height: 74)
+        .accessibilityLabel("Unlock hold progress")
     }
 }

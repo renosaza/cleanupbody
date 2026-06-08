@@ -7,6 +7,7 @@ struct CleanUpBodyCoreChecks {
     static func main() throws {
         try eventMaskContainsBlockedEvents()
         try emergencyStopRequiresFullChord()
+        try optionUnlockConstantsAreValid()
         try durationsArePositive()
         print("CleanUpBodyCore checks passed")
     }
@@ -51,6 +52,13 @@ struct CleanUpBodyCoreChecks {
             try expect(duration.seconds > 0, "duration must be positive")
             try expect(!duration.title.isEmpty, "duration title must not be empty")
         }
+    }
+
+    private static func optionUnlockConstantsAreValid() throws {
+        try expect(InputEventBlocker.isOptionKey(58), "left option key code must be recognized")
+        try expect(InputEventBlocker.isOptionKey(61), "right option key code must be recognized")
+        try expect(!InputEventBlocker.isOptionKey(53), "escape must not be option")
+        try expect(InputEventBlocker.unlockHoldDuration == 5, "unlock hold must be 5 seconds")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {

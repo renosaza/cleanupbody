@@ -7,11 +7,13 @@ final class AppModel: ObservableObject {
     @Published var permissionGranted = AccessibilityPermission.isTrusted
     @Published var selectedDuration: WipeDuration = .oneMinute
     @Published var remainingSeconds = 0
+    @Published var unlockHoldProgress = 0.0
     @Published var isBlocking = false
     @Published var status = "Ready"
 
     private let blocker = InputEventBlocker()
     private var timer: Timer?
+    private var sessionStartedAt: Date?
 
     var remainingText: String {
         let minutes = remainingSeconds / 60
@@ -45,6 +47,8 @@ final class AppModel: ObservableObject {
         do {
             try blocker.start()
             remainingSeconds = selectedDuration.seconds
+            unlockHoldProgress = 0
+            sessionStartedAt = Date()
             isBlocking = true
             status = "Wipe mode active"
             startTimer()
@@ -61,7 +65,7 @@ final class AppModel: ObservableObject {
 
     private func startTimer() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.tick()
             }
@@ -75,19 +79,29 @@ final class AppModel: ObservableObject {
             return
         }
         guard isBlocking else { return }
-        if remainingSeconds <= 1 {
+        unlockHoldProgress = blocker.unlockHoldProgress
+        if unlockHoldProgress >= 1 {
+            blocker.stop()
+            finishSession(status: "Unlocked")
+            return
+        }
+
+        let elapsed = sessionStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+        let nextRemaining = max(Int(ceil(Double(selectedDuration.seconds) - elapsed)), 0)
+        remainingSeconds = nextRemaining
+        if nextRemaining == 0 {
             blocker.stop()
             finishSession(status: "Done")
-        } else {
-            remainingSeconds -= 1
         }
     }
 
     private func finishSession(status: String) {
         timer?.invalidate()
         timer = nil
+        sessionStartedAt = nil
         isBlocking = false
         remainingSeconds = 0
+        unlockHoldProgress = 0
         self.status = status
     }
 }

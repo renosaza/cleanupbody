@@ -7,7 +7,8 @@ input while wiping a MacBook.
 
 - Timed wipe mode: 30 seconds, 1 minute, 2 minutes, or 5 minutes
 - Blocks keyboard, mouse, trackpad pointer, click, drag, and scroll events
-- Emergency stop chord: `Control + Option + Command + Escape`
+- Unlock gesture: hold both Option keys for 5 seconds
+- Animated unlock progress while both Option keys are held
 - Accessibility permission prompt and settings shortcut
 - Native SwiftUI app with a small auditable Swift core
 
@@ -48,8 +49,10 @@ Push a tag such as `v0.1.0`. The release workflow builds `CleanUpBody.app` and u
 
 ## Limitations
 
-macOS may reserve some hardware controls and system-level gestures. CleanUpBody is designed
-for temporary wipe sessions, not kiosk security or unattended device locking.
+macOS may continue moving the cursor visually on some Macs, but pointer clicks, scrolling,
+dragging, and keyboard input are suppressed for normal apps. Some hardware controls and
+system-level gestures may remain outside the app's control. CleanUpBody is designed for
+temporary wipe sessions, not kiosk security or unattended device locking.
 
 ## License
 

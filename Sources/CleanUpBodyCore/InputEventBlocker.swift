@@ -3,9 +3,14 @@ import Foundation
 
 public final class InputEventBlocker: @unchecked Sendable {
     public static let emergencyKeyCode: Int64 = 53
+    public static let leftOptionKeyCode: Int64 = 58
+    public static let rightOptionKeyCode: Int64 = 61
+    public static let unlockHoldDuration: TimeInterval = 5
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    private var heldOptionKeyCodes: Set<Int64> = []
+    private var unlockHoldStartedAt: Date?
 
     public private(set) var isBlocking = false
 
@@ -39,6 +44,8 @@ public final class InputEventBlocker: @unchecked Sendable {
 
         eventTap = tap
         runLoopSource = source
+        heldOptionKeyCodes.removeAll()
+        unlockHoldStartedAt = nil
         isBlocking = true
     }
 
@@ -51,7 +58,15 @@ public final class InputEventBlocker: @unchecked Sendable {
         }
         eventTap = nil
         runLoopSource = nil
+        heldOptionKeyCodes.removeAll()
+        unlockHoldStartedAt = nil
         isBlocking = false
+    }
+
+    public var unlockHoldProgress: Double {
+        guard let unlockHoldStartedAt, heldOptionKeyCodes.count == 2 else { return 0 }
+        let elapsed = Date().timeIntervalSince(unlockHoldStartedAt)
+        return min(max(elapsed / Self.unlockHoldDuration, 0), 1)
     }
 
     public static var blockedEventTypes: [CGEventType] {
@@ -93,6 +108,26 @@ public final class InputEventBlocker: @unchecked Sendable {
             && flags.contains(.maskControl)
     }
 
+    public static func isOptionKey(_ keyCode: Int64) -> Bool {
+        keyCode == leftOptionKeyCode || keyCode == rightOptionKeyCode
+    }
+
+    fileprivate func handleFlagsChanged(keyCode: Int64) {
+        guard Self.isOptionKey(keyCode) else { return }
+
+        if heldOptionKeyCodes.contains(keyCode) {
+            heldOptionKeyCodes.remove(keyCode)
+        } else {
+            heldOptionKeyCodes.insert(keyCode)
+        }
+
+        if heldOptionKeyCodes.count == 2 {
+            unlockHoldStartedAt = unlockHoldStartedAt ?? Date()
+        } else {
+            unlockHoldStartedAt = nil
+        }
+    }
+
     fileprivate func handleTapDisabled() {
         if let eventTap {
             CGEvent.tapEnable(tap: eventTap, enable: true)
@@ -114,6 +149,10 @@ private let inputEventCallback: CGEventTapCallBack = { _, type, event, refcon in
     }
 
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+    if type == .flagsChanged {
+        blocker.handleFlagsChanged(keyCode: keyCode)
+    }
+
     if InputEventBlocker.isEmergencyStop(type: type, keyCode: keyCode, flags: event.flags) {
         blocker.handleEmergencyStop()
         return Unmanaged.passUnretained(event)
